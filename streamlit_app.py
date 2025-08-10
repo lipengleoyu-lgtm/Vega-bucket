@@ -115,24 +115,8 @@ st.download_button(
     vega_df.to_csv(index=False).encode("utf-8"),
     file_name="asian_bucket_vegas.csv",
     mime="text/csv",
+    key="download_csv_button",
 )
-
-# -------------------- Notes --------------------
-st.markdown(
-    """
-**Notes**
-- Bucket vega is computed using **central finite differences** of size `bump` with **common random numbers**.
-- Volatility is **piecewise-constant per bucket**. A bump in bucket *i* propagates forward under GBM, so shapes are typically **front-loaded** within the averaging window.
-- Increase path count for smoother curves; antithetic variates help.
-- Set the averaging window to, e.g., `[0.5, 1.0]` to study buckets in the **second half** of maturity.
-"""
-)
-st.write("Averaging over buckets:", f"[{start_idx+1} .. {end_idx}] of {N}")
-st.dataframe(vega_df, use_container_width=True, height=420)
-
-# -------------------- Downloads --------------------
-csv = vega_df.to_csv(index=False).encode("utf-8")
-st.download_button("Download CSV", csv, file_name="asian_bucket_vegas.csv", mime="text/csv")
 
 # -------------------- Notes --------------------
 st.markdown(
@@ -144,3 +128,4 @@ st.markdown(
 - Set the averaging window to, e.g., `[0.5, 1.0]` to study bucket vegas for fixings in the **second half** of the maturity.
 """
 )
+
