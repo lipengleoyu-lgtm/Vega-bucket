@@ -78,8 +78,9 @@ end_idx = max(start_idx+1, min(end_idx, N))
 rng = np.random.default_rng(int(seed))
 Z_base = rng.standard_normal(size=(int(n_paths), N))
 
-base_price = simulate_price(sigmas, Z_base, S0, r, q, T, start_idx, end_idx, K, greek_type, antithetic)
-vegas = compute_bucket_vegas(sigmas, Z_base, bump, S0, r, q, T, start_idx, end_idx, K, greek_type, antithetic)
+with st.spinner("Running Monte Carlo..."):
+     base_price = simulate_price(sigmas, Z_base, S0, r, q, T, start_idx, end_idx, K, greek_type, antithetic)
+     vegas = compute_bucket_vegas(sigmas, Z_base, bump, S0, r, q, T, start_idx, end_idx, K, greek_type, antithetic)
 
 vega_df = pd.DataFrame({"Bucket": np.arange(1, N+1), "Vega": vegas})
 _total = vega_df["Vega"].sum()
