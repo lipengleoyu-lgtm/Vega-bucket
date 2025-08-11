@@ -168,11 +168,8 @@ with TAB_BUCKETS:
 with TAB_OPT:
     st.subheader("Find the best maturity to hedge per ticker (minimize distance-weighted vega)")
 
-    st.markdown(
-        "Provide per-ticker vega exposures at standard maturities (1m, 3m, 6m, 1y, 2y).\n"
-        "The optimizer returns the maturity (or maturities) that minimize the cost\n"
-        "\\( C(t_1) = \sum_{t_2} \text{vega}(t_2) \cdot d(t_1, t_2) \\)."
-    )
+    st.markdown("Provide per-ticker vega exposures at standard maturities (1m, 3m, 6m, 1y, 2y). The optimizer returns the maturity (or maturities) that minimize the distance-weighted cost:")
+    st.latex(r"C(t_1) = \sum_{t_2} \mathrm{vega}(t_2)\, d(t_1, t_2)")
 
     # Distance function choice
     dist_choice = st.selectbox("Distance function", list(DIST_FUNCS.keys()))
