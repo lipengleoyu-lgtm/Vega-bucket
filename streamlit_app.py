@@ -177,8 +177,12 @@ with TAB_OPT:
 
     # Editable table with dynamic rows
     sample = pd.DataFrame([
+        {"Ticker": "SPX", "1m": 100, "3m": 50, "6m": 10, "1y": 5,  "2y": 100},
         {"Ticker": "AAPL", "1m": 20, "3m": 20, "6m": 10, "1y": 10, "2y": 0},
         {"Ticker": "MSFT", "1m": 10, "3m": 50, "6m": 10, "1y": 5,  "2y": 0},
+        {"Ticker": "GOOG", "1m": 10, "3m": 50, "6m": 100, "1y": 50,  "2y": 10},
+        {"Ticker": "NVDA", "1m": 10, "3m": 10, "6m": 100, "1y": 50,  "2y": 100},
+        {"Ticker": "META", "1m": 20, "3m": 50, "6m": 20, "1y": 100,  "2y": 10},
     ])
 
     st.caption("Edit the exposures (vega in your units). Add/remove rows as needed.")
@@ -228,6 +232,7 @@ with TAB_OPT:
         # present results as friendly labels (e.g., '3m', '1y')
         label_map = {v: k for k, v in MAT_MAP.items()}
         labels = [label_map.get(t, f"{t:g}y") for t in mins]
+        labels = [labels[-1]]
         results.append({
             "Ticker": ticker,
             "Optimal hedge maturity/maturities": ", ".join(labels) if labels else "—",
@@ -243,7 +248,7 @@ with TAB_OPT:
     with right2:
         st.subheader("Details (current row)")
         if len(df) > 0:
-            r0 = df.iloc[0]
+            r0 = df.iloc[-1]
             st.write("Example exposure (first row):", row_to_dict(r0))
         st.markdown(
             f"**Distance:** `{dist_choice}`  ")
