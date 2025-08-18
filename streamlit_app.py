@@ -34,8 +34,8 @@ MAT_MAP = {
 #TAB_BUCKETS, TAB_OPT = st.tabs(["Bucket Vegas", "Hedge Maturity Optimizer"]) 
 
 # -------------------- Page 1: Bucket Vega by Tenor --------------------
-if page == "Bucket Vega by Tenor":
-    left, right = st.columns([1, 2])
+if page == "Asian Option Bucket Vega by Tenor":
+    left, right = st.columns([1, 3])
 
     # -------------------- LEFT: Inputs --------------------
     with left:
@@ -204,7 +204,7 @@ if page == "Bucket Vega by Tenor":
         )
 
 # ==================== TAB 2: Hedge Maturity Optimizer ====================
-if page == "Vega Hedge Maturity":
+if page == "Vega Hedge Optimized Maturity":
     st.title("Optimal Vega Hedge Maturity")
     st.markdown("Provide per-ticker vega exposures at standard maturities (1m, 3m, 6m, 1y, 2y). The optimizer returns the maturity (or maturities) that minimize the distance-weighted cost:")
     st.latex(r"C(t_1) = \sum_{t_2} \mathrm{vega}(t_2)\, d(t_1, t_2)")
