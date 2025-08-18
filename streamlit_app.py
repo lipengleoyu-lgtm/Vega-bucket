@@ -3,11 +3,11 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="Asian Option – Bucket Vegas & Hedge Optimizer", layout="wide")
-st.title("Asian Option – Bucket Vegas & Hedge Optimizer")
+st.set_page_config(page_title="Asian Option Bucket Vega & Vega Hedge Optimizer", layout="wide")
+st.title("Asian Option Bucket Vega & Vega Hedge Optimizer")
 
 
-page = st.sidebar.radio("Select Tool", ["Bucket Vega by Tenor", "Vega Hedge Maturity"])
+page = st.sidebar.radio("Select Tool", ["Asian Option Bucket Vega by Tenor", "Vega Hedge Optimized Maturity"])
 
 # ==================== Utilities shared across tabs ====================
 
@@ -63,7 +63,7 @@ if page == "Bucket Vega by Tenor":
         bump = st.number_input("Bump size (abs vol; 0.005 = 0.5 vol pt)", value=0.005, min_value=1e-5, step=0.001, format="%0.6f", key="bump")
         bump_mode = st.selectbox(
             "Bump definition",
-            ["Forward-bucket (OAT)", "Expiry-slice (increase expiry vol at t_j)"],
+            ["Expiry-slice","Forward-bucket (OAT)"],
             index=0,
             key="bumpmode",
         )
