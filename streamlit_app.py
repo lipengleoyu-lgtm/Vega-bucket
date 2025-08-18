@@ -35,55 +35,73 @@ MAT_MAP = {
 
 # -------------------- Page 1: Bucket Vega by Tenor --------------------
 if page == "Bucket Vega by Tenor":
-    st.title("Asian Option – Bucket Vegas by Tenor")
-    S0 = st.number_input("Spot S0", value=100.0, min_value=0.0, step=1.0)
-    K = st.number_input("Strike K", value=100.0, min_value=0.0, step=1.0)
-    r = st.number_input("Risk-free rate r", value=0.03, step=0.001)
-    q = st.number_input("Dividend yield q", value=0.00, step=0.001)
-    T = st.number_input("Maturity (years)", value=1.0, min_value=0.1, step=0.1)
-    freq_choice = st.selectbox("Averaging frequency per year", ["Monthly", "Weekly", "Daily"], index=0)
-    if freq_choice == "Monthly":
-        buckets_per_year = 12
-    elif freq_choice == "Weekly":
-        buckets_per_year = 52
-    else:
-        buckets_per_year = 252
-    N = max(2, int(round(buckets_per_year * T)))
-    start_frac, end_frac = st.slider("Averaging window (fraction of maturity)", 0.0, 1.0, (0.0, 1.0), step=0.01)
-    base_vol = st.number_input("Base vol (annualized)", value=0.20, min_value=0.0001, step=0.005)
-    bump = st.number_input("Bump size (abs vol)", value=0.005, min_value=1e-5, step=0.001)
-    bump_mode = st.selectbox(
-        "Bump definition",
-        ["Forward-bucket (OAT)", "Expiry-slice (increase expiry vol at t_j)"],
-        index=0,
-        key="bump_mode"
-    )
-    greek_type = st.selectbox("Option type", ["Call", "Put"], index=0)
-    n_paths = st.number_input("Number of paths", value=50000, min_value=1000, step=5000)
-    antithetic = st.checkbox("Use antithetic variates", value=True)
-    seed = st.number_input("Random seed", value=42, step=1)
+    left, right = st.columns([1, 2])
+
+    # -------------------- LEFT: Inputs --------------------
+    with left:
+        st.subheader("Inputs")
+        # Option parameters
+        st.markdown("**Option Parameters**")
+        S0 = st.number_input("Spot S0", value=100.0, min_value=0.0, step=1.0, format="%0.6f", key="S0")
+        K = st.number_input("Strike K", value=100.0, min_value=0.0, step=1.0, format="%0.6f", key="K")
+        r = st.number_input("Risk-free rate r", value=0.03, step=0.001, format="%0.6f", key="r")
+        q = st.number_input("Dividend yield q", value=0.00, step=0.001, format="%0.6f", key="q")
+        T = st.number_input("Maturity (years)", value=1.0, min_value=0.05, step=0.25, format="%0.6f", key="T")
+
+        st.markdown("**Averaging Window & Frequency**")
+        freq_choice = st.selectbox("Averaging frequency per year", ["Monthly", "Weekly", "Daily"], index=0, key="freq")
+        buckets_per_year = 12 if freq_choice == "Monthly" else 52 if freq_choice == "Weekly" else 252
+        N = max(2, int(round(buckets_per_year * T)))
+        start_frac, end_frac = st.slider("Averaging window (fraction of T)", 0.0, 1.0, (0.0, 1.0), step=0.01, key="window")
+
+        st.markdown("**Volatility Term Structure**")
+        base_vol = st.number_input("Base vol (annualized)", value=0.20, min_value=0.0001, step=0.005, format="%0.6f", key="basevol")
+        vol_mode = st.selectbox("Vol across buckets", ["Flat", "Linear slope"], index=0, key="volmode")
+        end_vol = st.number_input("End vol (at last bucket)", value=0.20, min_value=0.0001, step=0.005, format="%0.6f", key="endvol") if vol_mode == "Linear slope" else None
+
+        st.markdown("**Greeks Settings**")
+        bump = st.number_input("Bump size (abs vol; 0.005 = 0.5 vol pt)", value=0.005, min_value=1e-5, step=0.001, format="%0.6f", key="bump")
+        bump_mode = st.selectbox(
+            "Bump definition",
+            ["Forward-bucket (OAT)", "Expiry-slice (increase expiry vol at t_j)"],
+            index=0,
+            key="bumpmode",
+        )
+        greek_type = st.selectbox("Option type", ["Call", "Put"], index=0, key="otype")
+
+        st.markdown("**Monte Carlo Controls**")
+        n_paths = st.number_input("Number of paths", value=50000, min_value=1000, step=5000, key="paths")
+        antithetic = st.checkbox("Use antithetic variates", value=True, key="anti")
+        seed = st.number_input("Random seed", value=42, step=1, key="seed")
+
+    # -------------------- RIGHT: Outputs --------------------
+    with right:
+        st.subheader("Results")
+
+    # ====== Core functions ======
 
     def simulate_price(sigmas, Z, S0, r, q, T, start_idx, end_idx, K, greek_type, antithetic):
-        N = len(sigmas)
-        dt = T / N
+        Nloc = len(sigmas)
+        dt = T / Nloc
         mu = r - q
-        if antithetic:
-            Z = np.vstack([Z, -Z])
-        log_S = np.full(Z.shape[0], np.log(S0))
-        S_sum = np.zeros(Z.shape[0])
+        ZZ = np.vstack([Z, -Z]) if antithetic else Z
+        log_S = np.full(ZZ.shape[0], np.log(S0))
+        S_sum = np.zeros(ZZ.shape[0])
         count = max(1, end_idx - start_idx)
-        for i in range(N):
+        for i in range(Nloc):
             sigma_i = sigmas[i]
-            log_S += (mu - 0.5 * sigma_i**2) * dt + sigma_i * np.sqrt(dt) * Z[:, i]
+            log_S += (mu - 0.5 * sigma_i**2) * dt + sigma_i * np.sqrt(dt) * ZZ[:, i]
             if start_idx <= i < end_idx:
                 S_sum += np.exp(log_S)
         A = S_sum / count
         payoff = np.maximum(A - K, 0.0) if greek_type == "Call" else np.maximum(K - A, 0.0)
         return np.exp(-r * T) * payoff.mean()
 
+
     def compute_bucket_vegas(sigmas, Z, bump, *params):
-        vegas = np.zeros(len(sigmas))
-        for i in range(len(sigmas)):
+        Nloc = len(sigmas)
+        vegas = np.zeros(Nloc)
+        for i in range(Nloc):
             up = sigmas.copy(); up[i] += bump
             dn = sigmas.copy(); dn[i] -= bump
             p_up = simulate_price(up, Z, *params)
@@ -91,12 +109,13 @@ if page == "Bucket Vega by Tenor":
             vegas[i] = (p_up - p_dn) / (2 * bump)
         return vegas
 
+
     def _price_from_forwards(S0, K, r, q, sigmas_fwd, Z, T, which, fixing_idx):
         start_idx, end_idx = fixing_idx
         return simulate_price(np.array(sigmas_fwd, dtype=float), Z, S0, r, q, T, start_idx, end_idx, K, "Call" if which=="call" else "Put", antithetic)
 
+
     def expiry_slice_vegas(S0, K, r, q, sigmas_fwd, Z, bump_abs=0.01, T=1.0, which="call", fixing_idx=None):
-        """Bump the *expiry* vol at t_j by bump_abs by adjusting ONLY bucket j to increase sqrt(Var(0->t_j)/t_j) by bump_abs, keeping earlier buckets unchanged."""
         n = len(sigmas_fwd)
         dt = T / n
         base = _price_from_forwards(S0, K, r, q, sigmas_fwd, Z, T, which, fixing_idx)
@@ -117,34 +136,39 @@ if page == "Bucket Vega by Tenor":
             vegas.append((p - base) / bump_abs)
         return np.array(vegas), base
 
-    sigmas = np.full(N, base_vol)
+    # ====== Build sigmas & simulate ======
+    if vol_mode == "Linear slope":
+        sigmas = np.linspace(base_vol, end_vol if end_vol is not None else base_vol, N)
+    else:
+        sigmas = np.full(N, base_vol)
+
     start_idx = int(np.floor(start_frac * N))
     end_idx   = int(np.ceil(end_frac  * N))
     start_idx = max(0, min(start_idx, N-1))
     end_idx   = max(start_idx + 1, min(end_idx, N))
+
     rng = np.random.default_rng(int(seed))
     Z_base = rng.standard_normal(size=(int(n_paths), N))
-    # Compute base price and vegas depending on bump mode
-    if bump_mode.startswith("Expiry-slice"):
-        which = "call" if greek_type == "Call" else "put"
-        vegas, base_price = expiry_slice_vegas(
-            S0, K, r, q, sigmas, Z_base,
-            bump_abs=bump, T=T, which=which,
-            fixing_idx=(start_idx, end_idx)
-        )
-    else:
-        base_price = simulate_price(sigmas, Z_base, S0, r, q, T, start_idx, end_idx, K, greek_type, antithetic)
-        vegas = compute_bucket_vegas(sigmas, Z_base, bump, S0, r, q, T, start_idx, end_idx, K, greek_type, antithetic)
 
+    with st.spinner("Running Monte Carlo..."):
+        if bump_mode.startswith("Expiry-slice"):
+            which = "call" if greek_type == "Call" else "put"
+            vegas, base_price = expiry_slice_vegas(
+                S0, K, r, q, sigmas, Z_base, bump_abs=bump, T=T, which=which, fixing_idx=(start_idx, end_idx)
+            )
+        else:
+            base_price = simulate_price(sigmas, Z_base, S0, r, q, T, start_idx, end_idx, K, greek_type, antithetic)
+            vegas = compute_bucket_vegas(sigmas, Z_base, bump, S0, r, q, T, start_idx, end_idx, K, greek_type, antithetic)
+
+    # ====== Prepare outputs ======
     vega_df = pd.DataFrame({"Bucket": np.arange(1, N+1), "Vega": vegas})
     _total = vega_df["Vega"].sum()
     vega_df["Normalized (sum=1)"] = vega_df["Vega"] / _total if _total != 0 else 0.0
     vega_df["% of Total Vega"] = (100 * vega_df["Normalized (sum=1)"]).round(2)
 
-    left, right = st.columns([1.25, 1])
-    with left:
-        st.subheader("Bucket Vegas by Tenor")
-        fig, ax = plt.subplots(figsize=(10,4))
+    # -------------------- RIGHT: Plot & Table --------------------
+    with right:
+        fig, ax = plt.subplots(figsize=(10, 4))
         ax.bar(vega_df["Bucket"], vega_df["Vega"])
         if freq_choice == "Monthly":
             ax.set_xlabel("Month index (1 = first month)")
@@ -156,23 +180,28 @@ if page == "Bucket Vega by Tenor":
         ax.set_title("Asian Option Bucket Vegas")
         st.pyplot(fig, clear_figure=True)
 
-    with right:
-        st.subheader("Summary")
         st.metric("Base Price", f"{base_price:.6f}")
-        st.write("Buckets N:", N)
-        st.write("Averaging buckets:", f"[{start_idx+1} .. {end_idx}] of {N}")
         st.dataframe(vega_df, use_container_width=True, height=420)
 
-    st.download_button(
-        "Download CSV",
-        vega_df.to_csv(index=False).encode("utf-8"),
-        file_name="asian_bucket_vegas.csv",
-        mime="text/csv",
-        key="download_csv_button",
-    )
+        # -------------------- Downloads --------------------
+        st.download_button(
+            "Download CSV",
+            vega_df.to_csv(index=False).encode("utf-8"),
+            file_name="asian_bucket_vegas.csv",
+            mime="text/csv",
+            key="download_csv_button",
+        )
 
-    st.markdown("**Notes**: Bump modes — Forward-bucket (OAT) bumps one forward bucket; Expiry-slice bumps expiry vol at t_j by adjusting only bucket j. Uses CRN; shapes often front-loaded under GBM.")
-
+        # -------------------- Notes --------------------
+        st.markdown(
+            """
+    **Notes**
+    - **Bump definition**: *Forward-bucket (OAT)* bumps only bucket *j*'s forward vol; *Expiry-slice* bumps the expiry vol up to *t_j* by adjusting only bucket *j*, leaving earlier buckets unchanged.
+    - Volatility is piecewise-constant per bucket. Under GBM, earlier variance propagates forward, often yielding front-loaded shapes.
+    - Increase path count for smoother curves; antithetics help.
+    - Set the averaging window to, e.g., `[0.5, 1.0]` to study buckets in the second half of maturity.
+    """
+        )
 
 # ==================== TAB 2: Hedge Maturity Optimizer ====================
 if page == "Vega Hedge Maturity":
