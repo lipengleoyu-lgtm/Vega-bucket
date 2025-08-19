@@ -70,7 +70,7 @@ if page == "Asian Option Bucket Vega by Tenor":
         greek_type = st.selectbox("Option type", ["Call", "Put"], index=0, key="otype")
 
         st.markdown("**Monte Carlo Controls**")
-        n_paths = st.number_input("Number of paths", value=20000, min_value=1000, step=5000, key="paths")
+        n_paths = st.number_input("Number of paths", value=10000, min_value=1000, step=5000, key="paths")
         antithetic = st.checkbox("Use antithetic variates", value=True, key="anti")
         seed = st.number_input("Random seed", value=42, step=1, key="seed")
 
