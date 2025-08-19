@@ -63,14 +63,14 @@ if page == "Asian Option Bucket Vega by Tenor":
         bump = st.number_input("Bump size (abs vol; 0.005 = 0.5 vol pt)", value=0.005, min_value=1e-5, step=0.001, format="%0.6f", key="bump")
         bump_mode = st.selectbox(
             "Bump definition",
-            ["Expiry-slice","Forward-bucket (OAT)"],
+            ["Expiry-slice","Forward-bucket"],
             index=0,
             key="bumpmode",
         )
         greek_type = st.selectbox("Option type", ["Call", "Put"], index=0, key="otype")
 
         st.markdown("**Monte Carlo Controls**")
-        n_paths = st.number_input("Number of paths", value=50000, min_value=1000, step=5000, key="paths")
+        n_paths = st.number_input("Number of paths", value=10000, min_value=1000, step=5000, key="paths")
         antithetic = st.checkbox("Use antithetic variates", value=True, key="anti")
         seed = st.number_input("Random seed", value=42, step=1, key="seed")
 
@@ -196,7 +196,9 @@ if page == "Asian Option Bucket Vega by Tenor":
         st.markdown(
             """
     **Notes**
-    - **Bump definition**: *Forward-bucket (OAT)* bumps only bucket *j*'s forward vol; *Expiry-slice* bumps the expiry vol up to *t_j* by adjusting only bucket *j*, leaving earlier buckets unchanged.
+    - **Bump definition**: 
+      *Forward-bucket (One-At-a-Time)* bumps only bucket *j*'s forward vol; 
+      *Expiry-slice* bumps the expiry vol up to *t_j* by adjusting only bucket *j*, leaving earlier buckets unchanged.
     - Volatility is piecewise-constant per bucket. Under GBM, earlier variance propagates forward, often yielding front-loaded shapes.
     - Increase path count for smoother curves; antithetics help.
     - Set the averaging window to, e.g., `[0.5, 1.0]` to study buckets in the second half of maturity.
