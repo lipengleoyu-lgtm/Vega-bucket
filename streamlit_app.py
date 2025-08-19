@@ -197,9 +197,9 @@ if page == "Asian Option Bucket Vega by Tenor":
             """
     **Notes**
     - **Bump definition**: 
-      *Forward-bucket (One-At-a-Time)* bumps only bucket *j*'s forward vol; 
-      *Expiry-slice* bumps the expiry vol up to *t_j* by adjusting only bucket *j*, leaving earlier buckets unchanged.
-    - Volatility is piecewise-constant per bucket. Under GBM, earlier variance propagates forward, often yielding front-loaded shapes.
+    - *Expiry-slice* shocks the market-quoted expiry vol at t_j by adjusting only the last bucket so that the cumulative 0 \to t_j total variance reflects the bump, with earlier buckets unchanged;
+    - *Forward-bucket* shocks only the local forward vol in bucket j.
+    - Volatility is piecewise-constant per bucket. 
     - Increase path count for smoother curves; antithetics help.
     - Set the averaging window to, e.g., `[0.5, 1.0]` to study buckets in the second half of maturity.
     """
